@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"syscall"
 
 	"github.com/Sirupsen/logrus"
@@ -39,6 +40,8 @@ var (
 	FlagConfigMapName      = "configmap-name"
 	FlagHelperPodFile      = "helper-pod-file"
 	DefaultHelperPodFile   = "helperPod.yaml"
+	FlagThreadiness        = "threadiness"
+	DefaultThreadiness     = 16
 )
 
 func cmdNotFound(c *cli.Context, command string) {
@@ -106,6 +109,11 @@ func StartCmd() cli.Command {
 				Name:  FlagHelperPodFile,
 				Usage: "Paths to the Helper pod yaml file",
 				Value: "",
+			},
+			cli.IntFlag{
+				Name:  FlagThreadiness,
+				Usage: "Specify Threadiness.",
+				Value: DefaultThreadiness,
 			},
 		},
 		Action: func(c *cli.Context) {
@@ -222,6 +230,15 @@ func startDaemon(c *cli.Context) error {
 		}
 	}
 
+	threadiness := c.Int(FlagThreadiness)
+	if threadiness == 0 {
+		if runtime.NumCPU() > DefaultThreadiness {
+			threadiness = runtime.NumCPU()
+		} else {
+			threadiness = DefaultThreadiness
+		}
+	}
+
 	provisioner, err := NewProvisioner(stopCh, kubeClient, configFile, namespace, helperImage, configMapName, serviceAccountName, helperPodYaml)
 	if err != nil {
 		return err
@@ -232,6 +249,7 @@ func startDaemon(c *cli.Context) error {
 		provisioner,
 		serverVersion.GitVersion,
 		pvController.LeaderElection(false),
+		pvController.Threadiness(threadiness),
 	)
 	logrus.Debug("Provisioner started")
 	pc.Run(stopCh)
