@@ -268,6 +268,12 @@ func (p *LocalPathProvisioner) Delete(pv *v1.PersistentVolume) (err error) {
 	if err != nil {
 		return err
 	}
+
+	if _, err := p.kubeClient.CoreV1().Nodes().Get(node, metav1.GetOptions{}); err != nil {
+		logrus.Infof("Deleting volume %v at %v:%v, but node not exists.", pv.Name, node, path)
+		return nil
+	}
+
 	if pv.Spec.PersistentVolumeReclaimPolicy != v1.PersistentVolumeReclaimRetain {
 		logrus.Infof("Deleting volume %v at %v:%v", pv.Name, node, path)
 		storage := pv.Spec.Capacity[v1.ResourceName(v1.ResourceStorage)]
