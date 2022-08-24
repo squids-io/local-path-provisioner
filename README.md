@@ -274,3 +274,17 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may not use 
 [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
 
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+## Build
+
+### Build linux amd64 binary file
+
+```CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build```
+
+### Build docker image
+
+```docker build . -t swr.cn-east-2.myhuaweicloud.com/squids/local-path-provisioner:v0.0.20 -f package/Dockerfile```
+
+### Push docker image
+
+```docker push swr.cn-east-2.myhuaweicloud.com/squids/local-path-provisioner:v0.0.20```

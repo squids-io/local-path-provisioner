@@ -31,6 +31,8 @@ const (
 	KeyNode = "kubernetes.io/hostname"
 
 	NodeDefaultNonListedNodes = "DEFAULT_PATH_FOR_NON_LISTED_NODES"
+
+	AnnotationKeyHostPath = "squids.io/host-path"
 )
 
 var (
@@ -192,16 +194,21 @@ func (p *LocalPathProvisioner) Provision(opts pvController.ProvisionOptions) (*v
 		return nil, fmt.Errorf("configuration error, no node was specified")
 	}
 
-	basePath, err := p.getRandomPathOnNode(node.Name)
-	if err != nil {
-		return nil, err
-	}
-
 	name := opts.PVName
-	folderName := strings.Join([]string{name, opts.PVC.Namespace, opts.PVC.Name}, "_")
+	path, ok := pvc.Annotations[AnnotationKeyHostPath]
+	if ok && path != "" {
+		logrus.Infof("Reuse volume %v at %v:%v", name, node.Name, path)
+	} else {
+		basePath, err := p.getRandomPathOnNode(node.Name)
+		if err != nil {
+			return nil, err
+		}
 
-	path := filepath.Join(basePath, folderName)
-	logrus.Infof("Creating volume %v at %v:%v", name, node.Name, path)
+		folderName := strings.Join([]string{name, opts.PVC.Namespace, opts.PVC.Name}, "_")
+
+		path = filepath.Join(basePath, folderName)
+		logrus.Infof("Creating volume %v at %v:%v", name, node.Name, path)
+	}
 
 	storage := pvc.Spec.Resources.Requests[v1.ResourceName(v1.ResourceStorage)]
 	volMode := string(*pvc.Spec.VolumeMode)
